@@ -42,9 +42,10 @@ Future<void> main(List<String> args) async {
 
   final dataDir = await getApplicationSupportDirectory();
   final cacheDir = await getApplicationCacheDirectory();
-  // `null` → FRB грузит бандл `libsc_bridge.so` по rpath ($ORIGIN/lib, cargokit
-  // в CMake). Для запуска из исходников без бандла — переопределить `SC_RUST_LIB`.
-  final rustLib = Platform.environment['SC_RUST_LIB'];
+  // Linux/Windows: `null` → FRB грузит бандл по имени (rpath $ORIGIN/lib на Linux,
+  // рядом с .exe на Windows). macOS: явный путь в `.app/Contents/Frameworks`
+  // (dlopen по голому имени туда не смотрит). Override — `SC_RUST_LIB`.
+  final rustLib = Platform.environment['SC_RUST_LIB'] ?? _macOsFramework('sc_bridge');
 
   // Окно мини-плеера — отдельный процесс нашего же бинаря; тоггл из меню трея.
   final mini = _MiniLauncher(
@@ -209,10 +210,27 @@ ScMediaHandlers _desktopMedia(ScRemoteControls remote) {
   );
 }
 
-/// Единый десктоп-FFI: грузим бандл `libdesktop_bridge.so` по имени (rpath
-/// $ORIGIN/lib, cargokit в CMake). Для запуска из исходников — `SC_MEDIA_LIB`.
+/// Единый десктоп-FFI: грузим бандл моста по платформенному имени (Linux —
+/// `libdesktop_bridge.so` по rpath $ORIGIN/lib; Windows — `desktop_bridge.dll`
+/// рядом с .exe; macOS — `.dylib` в `Contents/Frameworks`). Override — `SC_MEDIA_LIB`.
 String get _desktopLib =>
-    Platform.environment['SC_MEDIA_LIB'] ?? 'libdesktop_bridge.so';
+    Platform.environment['SC_MEDIA_LIB'] ?? _platformLib('desktop_bridge');
+
+/// Имя/путь нативной либы по ОС: Windows — `<stem>.dll`; macOS — абсолютный путь
+/// в `.app/Contents/Frameworks/lib<stem>.dylib`; Linux — `lib<stem>.so` (rpath).
+String _platformLib(String stem) {
+  if (Platform.isWindows) return '$stem.dll';
+  if (Platform.isMacOS) return _macOsFramework(stem)!;
+  return 'lib$stem.so';
+}
+
+/// Абсолютный путь к dylib в бандле macOS (`<exe>/../Frameworks/lib<stem>.dylib`).
+/// На прочих ОС — `null` (там либа грузится по имени).
+String? _macOsFramework(String stem) {
+  if (!Platform.isMacOS) return null;
+  final macosDir = File(Platform.resolvedExecutable).parent.path; // Contents/MacOS
+  return '$macosDir/../Frameworks/lib$stem.dylib';
+}
 
 /// Открыть медиа-контролы из десктоп-FFI + подключить медиа-клавиши ОС к движку
 /// (inbound). Недоступны — `null`.

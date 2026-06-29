@@ -52,6 +52,31 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+# === Rust native libraries (cargokit-style: build + bundle .dll) ===
+# Те же крейты, что на Linux; на Windows .dll кладутся рядом с .exe (DLL-поиск
+# приложения), грузятся по имени: sc_bridge.dll (FRB) и desktop_bridge.dll.
+set(RUST_CARGO_PROFILE "dev")
+set(RUST_TARGET_DIR "debug")
+if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+  set(RUST_CARGO_PROFILE "release")
+  set(RUST_TARGET_DIR "release")
+endif()
+
+get_filename_component(SC_SHARED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../Core/shared" ABSOLUTE)
+get_filename_component(SC_DEPENS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../depens" ABSOLUTE)
+set(SC_BRIDGE_DLL "${SC_SHARED_DIR}/target/${RUST_TARGET_DIR}/sc_bridge.dll")
+set(DESKTOP_BRIDGE_DLL "${SC_DEPENS_DIR}/target/${RUST_TARGET_DIR}/desktop_bridge.dll")
+
+add_custom_target(sc_rust_bridges ALL
+  COMMAND cargo build --profile ${RUST_CARGO_PROFILE} -p sc-bridge
+          --manifest-path "${SC_SHARED_DIR}/Cargo.toml"
+  COMMAND cargo build --profile ${RUST_CARGO_PROFILE} -p desktop-bridge
+          --manifest-path "${SC_DEPENS_DIR}/Cargo.toml"
+  COMMENT "Building Rust native bridges (sc-bridge, desktop-bridge)"
+  VERBATIM
+)
+add_dependencies(${BINARY_NAME} sc_rust_bridges)
+
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
@@ -86,6 +111,11 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Rust-мосты рядом с .exe (см. sc_rust_bridges выше).
+install(FILES "${SC_BRIDGE_DLL}" "${DESKTOP_BRIDGE_DLL}"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")

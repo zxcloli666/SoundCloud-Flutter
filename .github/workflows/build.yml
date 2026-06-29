@@ -6,50 +6,123 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+env:
+  FLUTTER_VERSION: 3.44.3
+
 jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: System dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev \
-            libasound2-dev libdbus-1-dev
-
+            libgtk-3-dev liblzma-dev libasound2-dev libdbus-1-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: |
             Core/shared
             Desktop/depens
-
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.3
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-
-      - name: Build (release)
+      - name: Build
         working-directory: Desktop/app
         run: |
           flutter pub get
           flutter build linux --release
-
-      - name: Package bundle
+      - name: Package
         working-directory: Desktop/app/build/linux/x64/release
         run: tar czf "$GITHUB_WORKSPACE/soundcloud-linux-x64.tar.gz" -C bundle .
-
       - uses: actions/upload-artifact@v4
         with:
           name: soundcloud-linux-x64
           path: soundcloud-linux-x64.tar.gz
-
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: soundcloud-linux-x64.tar.gz
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            Core/shared
+            Desktop/depens
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build
+        working-directory: Desktop/app
+        run: |
+          flutter pub get
+          flutter build windows --release
+      - name: Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path Desktop/app/build/windows/x64/runner/Release/* `
+            -DestinationPath soundcloud-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: soundcloud-windows-x64
+          path: soundcloud-windows-x64.zip
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: soundcloud-windows-x64.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            Core/shared
+            Desktop/depens
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build app
+        working-directory: Desktop/app
+        run: |
+          flutter pub get
+          flutter build macos --release
+      - name: Build Rust bridges
+        run: |
+          cargo build --release -p sc-bridge --manifest-path Core/shared/Cargo.toml
+          cargo build --release -p desktop-bridge --manifest-path Desktop/depens/Cargo.toml
+      - name: Inject native libs + re-sign
+        run: |
+          APP=$(find Desktop/app/build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)
+          echo "app: $APP"
+          mkdir -p "$APP/Contents/Frameworks"
+          cp Core/shared/target/release/libsc_bridge.dylib "$APP/Contents/Frameworks/"
+          cp Desktop/depens/target/release/libdesktop_bridge.dylib "$APP/Contents/Frameworks/"
+          codesign --force --deep --sign - "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" soundcloud-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: soundcloud-macos
+          path: soundcloud-macos.zip
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: soundcloud-macos.zip
