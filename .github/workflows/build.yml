@@ -9,6 +9,10 @@ on:
 env:
   FLUTTER_VERSION: 3.44.3
 
+# Релиз-джоб аплоадит ассеты в Release — нужны права записи контента.
+permissions:
+  contents: write
+
 jobs:
   linux:
     runs-on: ubuntu-latest
