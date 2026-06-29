@@ -1,0 +1,7 @@
+[package]
+name = "sc-platform"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sc-core = { version = "0.1.0", path = "../sc-core" }

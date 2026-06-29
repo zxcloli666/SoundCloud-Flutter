@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+# Профили общие для всех крейтов ядра.
+# Аудио и сеть чувствительны к латентности — в релизе жмём по максимуму.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"

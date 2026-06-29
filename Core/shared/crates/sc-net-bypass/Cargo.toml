@@ -1,0 +1,12 @@
+[package]
+name = "sc-net-bypass"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls", "socks"] }
+tokio = { version = "1.52.3", features = ["rt", "net", "io-util", "time", "sync", "macros"] }
+tracing = "0.1.44"
+
+[target."cfg(unix)".dependencies]
+libc = "0.2.186"

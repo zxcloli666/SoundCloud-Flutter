@@ -1,0 +1,16 @@
+[package]
+name = "sc-raw"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bytes = "1.12.0"
+futures = "0.3.32"
+sc-domain = { version = "0.1.0", path = "../sc-domain" }
+sc-net = { version = "0.1.0", path = "../sc-net" }
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.18"
+urlencoding = "2.1.3"
+
+[dev-dependencies]
+tokio = { version = "1.52.3", features = ["rt-multi-thread", "macros"] }

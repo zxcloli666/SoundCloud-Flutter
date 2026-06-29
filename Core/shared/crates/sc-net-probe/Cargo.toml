@@ -1,0 +1,12 @@
+[package]
+name = "sc-net-probe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sc-net = { version = "0.1.0", path = "../sc-net" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+thiserror = "2.0.18"
+tokio = { version = "1.52.3", features = ["time"] }
+urlencoding = "2.1.3"

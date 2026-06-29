@@ -1,0 +1,29 @@
+# Rust
+**/target/
+**/*.rs.bk
+
+# Dart / Flutter
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/ephemeral/
+visual/pubspec.lock
+engine/pubspec.lock
+
+# Native build artifacts
+**/*.so
+**/*.a
+**/*.o
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# Misc
+**/node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,16 @@
+[package]
+name = "sc-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sc-audio = { version = "0.1.0", path = "../sc-audio" }
+sc-auth = { version = "0.1.0", path = "../sc-auth" }
+sc-bff = { version = "0.1.0", path = "../sc-bff" }
+sc-cache = { version = "0.1.0", path = "../sc-cache" }
+sc-domain = { version = "0.1.0", path = "../sc-domain" }
+sc-net = { version = "0.1.0", path = "../sc-net" }
+sc-raw = { version = "0.1.0", path = "../sc-raw" }
+sc-wallpapers = { version = "0.1.0", path = "../sc-wallpapers" }
+thiserror = "2.0.18"
+tokio = { version = "1.52.3", features = ["fs", "macros", "rt", "sync", "time"] }
